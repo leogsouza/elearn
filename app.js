@@ -12,11 +12,15 @@ var passport = require('passport');
 var localStrategy = require('passport-local').Strategy;
 var mongo = require('mongodb');
 var mongoose = require('mongoose');
+async = require('async');
 mongoose.connect('mongodb://localhost/elearn');
 var db = mongoose.connection;
 
 var routes = require('./routes/index');
 var users = require('./routes/users');
+var classes = require('./routes/classes');
+var students = require('./routes/students');
+var instructors = require('./routes/instructors');
 
 var app = express();
 
@@ -25,12 +29,34 @@ app.set('views', path.join(__dirname, 'views'));
 app.engine('handlebars',exphbs({defaultLayout: 'layout'}));
 app.set('view engine', 'handlebars');
 
+// uncomment after placing your favicon in /public
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(logger('dev'));
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, 'public')));
+
 // Express session
 app.use(session({
-  secret: 'secret',
-  saveUninitialized:true,
+  secret: 'mystring',
+  saveUninitialized:false,
   resave: true
 }));
+
+// Connect flash
+app.use(flash());
+
+// Global vars
+app.use(function(req, res, next) {
+  messages = require('express-messages')(req, res);
+  res.locals.messages = messages();
+  
+  if(req.url == '/') {
+    res.locals.isHome = true;
+  }
+  next();
+});
 
 // Passport
 app.use(passport.initialize());
@@ -53,25 +79,23 @@ app.use(expressValidator({
   }
 }));
 
-// Connect flash
-app.use(flash());
 
-// Global vars
-app.use(function(req, res, next) {
-  res.locals.messages = require('express-messages')(req, res);
+
+
+
+app.get('*', function(req, res, next) {
+  res.locals.user = req.user || null;
+  if(req.user){
+    res.locals.type = req.user.type;
+  }
   next();
 });
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
-
 app.use('/', routes);
 app.use('/users', users);
+app.use('/classes', classes);
+app.use('/students', students);
+app.use('/instructors', instructors);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

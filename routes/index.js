@@ -10,8 +10,8 @@ router.get('/', function(req, res, next) {
 		} else {
 			res.render('index', {"classes": classes});
 		}
-	})
-	res.render('index', { title: 'Express' });
+	},3);
+	
 });
 
 module.exports = router;
